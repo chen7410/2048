@@ -1,7 +1,5 @@
 // This code runs the simulation and sends the selected moves to the game
-/**The AgentBrain is a clone of the 2048 game board 
- * 
-*/
+
 function AgentManager(gameManager) {
     this.gameManager = gameManager;
     this.agent = new Agent();
@@ -55,7 +53,7 @@ AgentManager.prototype.selectMove = function () {
             console.log("Average Score: " + this.totalScore / this.numPlayed + " Max Score: " + this.maxScore);
         }
         else {
-            setTimeout(this.gameManager.restart.bind(this.gameManager), 1000);
+            // setTimeout(this.gameManager.restart.bind(this.gameManager), 1000); // only play one game id comment out
         }
     } else { // game ongoing
         if (this.gameManager.won && !this.gameManager.keepPlaying) {

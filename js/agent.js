@@ -16,7 +16,7 @@ AgentBrain.prototype.reset = function () {
     this.grid = new Grid(this.previousState.size, this.previousState.cells);
 };
 
-// Adds a tile in a random position
+/** Adds a tile in a random position*/
 AgentBrain.prototype.addRandomTile = function () {
     if (this.grid.cellsAvailable()) {
         var value = Math.random() < 0.9 ? 2 : 4;
@@ -43,7 +43,7 @@ AgentBrain.prototype.move = function (direction) {
     var traversals = this.buildTraversals(vector);
     var moved = false;
 
-    //console.log(vector);
+    // console.log(vector);
 
     //console.log(traversals);
 
@@ -81,12 +81,18 @@ AgentBrain.prototype.move = function (direction) {
             }
         });
     });
-    //console.log(moved);
+    console.log(moved);
     if (moved) {
-        this.addRandomTile();
+        //  this.addRandomTile(); 
+        this.grid.cellsAvailable();
+        var value = Math.random() < 0.9 ? 2 : 4;
+        var tile = new Tile(this.grid.randomAvailableCell(), value);
+        // var tile = new Tile({x:2, y:1}, value); //create a tile with the value to the position x=2, y=1
+        this.grid.insertTile(tile);
+
     }
     return moved;
-};
+    };
 
 // Get the vector representing the chosen direction
 AgentBrain.prototype.getVector = function (direction) {
@@ -140,6 +146,7 @@ AgentBrain.prototype.positionsEqual = function (first, second) {
 function Agent() {
 };
 
+/**The AgentBrain is a clone of the 2048 game board */
 Agent.prototype.selectMove = function (gameManager) {
     var brain = new AgentBrain(gameManager);
 
@@ -148,10 +155,13 @@ Agent.prototype.selectMove = function (gameManager) {
     // i = 0: up, 1: right, 2: down, 3: left
     // brain.reset() resets the brain to the current game board
 
+    console.dir(brain);
+
     if (brain.move(0)) return 0;
     if (brain.move(1)) return 1;
     if (brain.move(3)) return 3;
     if (brain.move(2)) return 2;
+    
 };
 
 Agent.prototype.evaluateGrid = function (gameManager) {

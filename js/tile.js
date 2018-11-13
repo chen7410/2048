@@ -1,4 +1,4 @@
-function Tile(position, value) {
+function Tile(position, value) {//2/4/8/...
   this.x                = position.x;
   this.y                = position.y;
   this.value            = value || 2;
