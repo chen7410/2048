@@ -81,16 +81,16 @@ AgentBrain.prototype.move = function (direction) {
             }
         });
     });
-    console.log(moved);
-    if (moved) {
-        //  this.addRandomTile(); 
-        this.grid.cellsAvailable();
-        var value = Math.random() < 0.9 ? 2 : 4;
-        var tile = new Tile(this.grid.randomAvailableCell(), value);
-        // var tile = new Tile({x:2, y:1}, value); //create a tile with the value to the position x=2, y=1
-        this.grid.insertTile(tile);
+    // console.log(moved);
+    // if (moved) {// add a random tile to the board after a move
+    //     //  this.addRandomTile(); 
+    //     this.grid.cellsAvailable();
+    //     var value = Math.random() < 0.9 ? 2 : 4;
+    //     var tile = new Tile(this.grid.randomAvailableCell(), value);
+    //     // var tile = new Tile({x:2, y:1}, value); //create a tile with the value to the position x=2, y=1 for testing
+    //     this.grid.insertTile(tile);
 
-    }
+    // }
     return moved;
     };
 
@@ -123,6 +123,7 @@ AgentBrain.prototype.buildTraversals = function (vector) {
     return traversals;
 };
 
+
 AgentBrain.prototype.findFarthestPosition = function (cell, vector) {
     var previous;
 
@@ -143,28 +144,161 @@ AgentBrain.prototype.positionsEqual = function (first, second) {
     return first.x === second.x && first.y === second.y;
 };
 
+
+
+var PLAYER = 0;
+var COMPUTER = 1;
 function Agent() {
 };
 
-/**The AgentBrain is a clone of the 2048 game board */
-Agent.prototype.selectMove = function (gameManager) {
-    var brain = new AgentBrain(gameManager);
-
-    // Use the brain to simulate moves
-    // brain.move(i) 
-    // i = 0: up, 1: right, 2: down, 3: left
-    // brain.reset() resets the brain to the current game board
-
-    console.dir(brain);
-
-    if (brain.move(0)) return 0;
-    if (brain.move(1)) return 1;
-    if (brain.move(3)) return 3;
-    if (brain.move(2)) return 2;
+/**
+ * @param {*} depth the recursive depth
+ * @param {*} brain the game board state, a clone of a gameManager
+ * @param {*} player the human or computer
+ */
+Agent.prototype.expectimax = function (depth, brain, turn) {
+    var cloneBrain = new AgentBrain(brain);
+    var legalMoves = this.getLegalMoves(cloneBrain);
+    if (depth === 0 || (legalMoves.length === 0)) { //no leagal move or depth reach end
+        return this.evaluateGrid(brain.grid);
+    }
     
+    if (turn === PLAYER) {
+        var score = Number.MIN_VALUE;
+        for (var i = 0; i < legalMoves.length; i++) {
+            cloneBrain.move(legalMoves[i]);
+            var tempScore = this.expectimax(depth - 1, cloneBrain, COMPUTER);
+            if (tempScore > score) {
+                score = tempScore;
+            }
+            cloneBrain.reset();
+        }
+        return score;
+
+    } else if (turn === COMPUTER) {
+        var emptyCells = cloneBrain.grid.availableCells();
+        var score = 0;
+        var emptyCellLength = emptyCells.length
+
+        for (var i = 0; i < emptyCellLength; i++) {
+            //insert 2 to grid and evaluate
+            var tile2 = new Tile(emptyCells[i], 2);
+            this.insertTileToGrid(tile2, cloneBrain.grid);
+            var tempScore2 = this.expectimax(depth - 1, cloneBrain, PLAYER);
+            score += 0.9 * tempScore2;
+
+            //insert 4 to grid and evaluate
+            var tile4 = new Tile(emptyCells[i], 4);
+            this.insertTileToGrid(tile4, cloneBrain.grid);
+            var tempScore4 = this.expectimax(depth - 1, cloneBrain, PLAYER);
+            score += 0.1 * tempScore4;
+        }
+        return score / emptyCellLength;
+    }
+    
+}
+
+Agent.prototype.getLegalMoves = function(brain) {
+    var directions = [];
+    for (var i = 0; i < 4; i++) {
+        if (brain.move(i)) {
+            directions.push(i);
+        }
+        brain.reset();
+    }
+    return directions;
+}
+
+Agent.prototype.insertTileToGrid = function(tile, grid) {
+	grid.insertTile(tile);
+}
+
+/**
+ * 11 games played in 1000007ms.
+ * 2048: 10 4096: 3 8192: 0
+ */
+Agent.prototype.selectMove = function (gameManager) {
+    var cloneBrain = new AgentBrain(gameManager);
+    var score = Number.MIN_VALUE;
+    var bestMove = 0;
+    var legalMoves = this.getLegalMoves(cloneBrain);
+    // var depth = cloneBrain.grid.availableCells().length > 4 ? 4:6;
+    var depth = 4; // 6 will be very slow
+
+    for (var i = 0; i < legalMoves.length; i++) {
+        cloneBrain.move(legalMoves[i]);
+        var tempScore = this.expectimax(depth, cloneBrain, COMPUTER);
+        if (tempScore > score) {
+            score = tempScore;
+            bestMove = legalMoves[i];
+        }
+        cloneBrain.reset();
+    }
+    return bestMove;
 };
+// var WEIGHT = [
+//     [100, 50, 25, 1],
+//     [50, 25, 1, -25],
+//     [25, 1, -25, -50],
+//     [1, -25, -50, -100]
+// ];
+//weight matrix from http://iamkush.me/an-artificial-intelligence-for-the-2048-game/
+// var WEIGHT = [
+//     [6, 5, 4, 1],
+//     [5, 4, 1, 0],
+//     [4, 1, 0, -1],
+//     [1, 0, -1, -2]
+// ];
 
-Agent.prototype.evaluateGrid = function (gameManager) {
-    // calculate a score for the current grid configuration
+//weight matrix from https://codemyroad.wordpress.com/2014/05/14/2048-ai-the-intelligent-bot/
+var WEIGHT = [
+    [0.135759, 0.121925, 0.102812, 0.099937],
+    [0.0997992, 0.0888405, 0.076711, 0.0724143],
+    [0.060654, 0.0562579, 0.037116, 0.0161889],
+    [0.0125498, 0.00992495, 0.00575871, 0.00335193]
+];
+/** calculate a score for the current grid configuration */
+Agent.prototype.evaluateGrid = function (grid) {
+    var size = grid.cells.length;
+    var score = 0;
+    //cell value * WEIGHT
+    for (var i = 0; i < size; i++) {
+        for (var j = 0; j < size; j++) {
+            if (grid.cells[i][j] != null) {
+                score += grid.cells[i][j].value * WEIGHT[i][j];
+            }
+        }
+    }
+    //give a penalty if neighbour's value > the cell on the neighbour' left.
+    var penalty = 0;
+    for (var i = 0; i < size - 1; i++) {
+        for (var j = 0; j < size - 1; j++) {
+            var cellValue = 0;
+            var neighbourValue = 0;
+            if (grid.cells[i][j] != null) {
+                cellValue = grid.cells[i][j].value;
+                if (grid.cells[i][j+1] != null) {
+                    neighbourValue = grid.cells[i][j+1].value;
+                }
+                penalty += Math.abs(neighbourValue - cellValue);
+            }
+        }
+    }
+    //give a penalty if neighbour's value > the cell on the neighbour' top.
+    for (var i = 0; i < size - 1; i++) {
+        for (var j = 0; j < size - 1; j++) {
+            var cellValue = 0;
+            var neighbourValue = 0;
+            if (grid.cells[j][i] != null) {
+                cellValue = grid.cells[j][i].value;
+                if (grid.cells[j][i+1] != null) {
+                    neighbourValue = grid.cells[j][i+1].value;
+                }
+                penalty += Math.abs(neighbourValue - cellValue);
+            }
+        }
+    }
+    return score - penalty * 0.005;
 
+    // return score;
 };

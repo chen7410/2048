@@ -53,7 +53,7 @@ AgentManager.prototype.selectMove = function () {
             console.log("Average Score: " + this.totalScore / this.numPlayed + " Max Score: " + this.maxScore);
         }
         else {
-            // setTimeout(this.gameManager.restart.bind(this.gameManager), 1000); // only play one game id comment out
+            setTimeout(this.gameManager.restart.bind(this.gameManager), 1000); // only play one game if comment out
         }
     } else { // game ongoing
         if (this.gameManager.won && !this.gameManager.keepPlaying) {
