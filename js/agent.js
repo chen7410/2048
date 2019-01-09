@@ -84,12 +84,6 @@ AgentBrain.prototype.move = function (direction) {
     // console.log(moved);
     // if (moved) {// add a random tile to the board after a move
     //     //  this.addRandomTile(); 
-    //     this.grid.cellsAvailable();
-    //     var value = Math.random() < 0.9 ? 2 : 4;
-    //     var tile = new Tile(this.grid.randomAvailableCell(), value);
-    //     // var tile = new Tile({x:2, y:1}, value); //create a tile with the value to the position x=2, y=1 for testing
-    //     this.grid.insertTile(tile);
-
     // }
     return moved;
     };
@@ -145,7 +139,6 @@ AgentBrain.prototype.positionsEqual = function (first, second) {
 };
 
 
-
 var PLAYER = 0;
 var COMPUTER = 1;
 function Agent() {
@@ -166,31 +159,34 @@ Agent.prototype.expectimax = function (depth, brain, turn) {
     if (turn === PLAYER) {
         var score = Number.MIN_VALUE;
         for (var i = 0; i < legalMoves.length; i++) {
-            cloneBrain.move(legalMoves[i]);
-            var tempScore = this.expectimax(depth - 1, cloneBrain, COMPUTER);
+            var clone = new AgentBrain(cloneBrain);
+            clone.move(legalMoves[i]);
+            var tempScore = this.expectimax(depth - 1, clone, COMPUTER);
             if (tempScore > score) {
                 score = tempScore;
             }
-            cloneBrain.reset();
+            // cloneBrain.reset();
         }
         return score;
 
     } else if (turn === COMPUTER) {
-        var emptyCells = cloneBrain.grid.availableCells();
+        var emptyCells = brain.grid.availableCells();
         var score = 0;
         var emptyCellLength = emptyCells.length
 
         for (var i = 0; i < emptyCellLength; i++) {
             //insert 2 to grid and evaluate
+            var clone = new AgentBrain(cloneBrain);
             var tile2 = new Tile(emptyCells[i], 2);
-            this.insertTileToGrid(tile2, cloneBrain.grid);
-            var tempScore2 = this.expectimax(depth - 1, cloneBrain, PLAYER);
+            this.insertTileToGrid(tile2, clone.grid);
+            var tempScore2 = this.expectimax(depth - 1, clone, PLAYER);
             score += 0.9 * tempScore2;
 
             //insert 4 to grid and evaluate
+            clone = new AgentBrain(cloneBrain);
             var tile4 = new Tile(emptyCells[i], 4);
-            this.insertTileToGrid(tile4, cloneBrain.grid);
-            var tempScore4 = this.expectimax(depth - 1, cloneBrain, PLAYER);
+            this.insertTileToGrid(tile4, clone.grid);
+            var tempScore4 = this.expectimax(depth - 1, clone, PLAYER);
             score += 0.1 * tempScore4;
         }
         return score / emptyCellLength;
@@ -214,8 +210,8 @@ Agent.prototype.insertTileToGrid = function(tile, grid) {
 }
 
 /**
- * 11 games played in 1000007ms.
- * 2048: 10 4096: 3 8192: 0
+ * 7 games played in 1000007ms.
+ * 2048: 5 4096: 5 8192: 1
  */
 Agent.prototype.selectMove = function (gameManager) {
     var cloneBrain = new AgentBrain(gameManager);
@@ -236,12 +232,7 @@ Agent.prototype.selectMove = function (gameManager) {
     }
     return bestMove;
 };
-// var WEIGHT = [
-//     [100, 50, 25, 1],
-//     [50, 25, 1, -25],
-//     [25, 1, -25, -50],
-//     [1, -25, -50, -100]
-// ];
+
 //weight matrix from http://iamkush.me/an-artificial-intelligence-for-the-2048-game/
 // var WEIGHT = [
 //     [6, 5, 4, 1],
@@ -250,12 +241,14 @@ Agent.prototype.selectMove = function (gameManager) {
 //     [1, 0, -1, -2]
 // ];
 
-//weight matrix from https://codemyroad.wordpress.com/2014/05/14/2048-ai-the-intelligent-bot/
+/**weight matrix from https://codemyroad.wordpress.com/2014/05/14/2048-ai-the-intelligent-bot/
+ * modify to a snake-shaped for better result.
+ * */
 var WEIGHT = [
     [0.135759, 0.121925, 0.102812, 0.099937],
-    [0.0997992, 0.0888405, 0.076711, 0.0724143],
+    [0.0724143, 0.076711, 0.0888405,0.0997992],
     [0.060654, 0.0562579, 0.037116, 0.0161889],
-    [0.0125498, 0.00992495, 0.00575871, 0.00335193]
+    [0.00335193, 0.00575871, 0.00992495, 0.0125498]
 ];
 /** calculate a score for the current grid configuration */
 Agent.prototype.evaluateGrid = function (grid) {
@@ -298,7 +291,5 @@ Agent.prototype.evaluateGrid = function (grid) {
             }
         }
     }
-    return score - penalty * 0.005;
-
-    // return score;
+    return score - penalty * 0.002;
 };
